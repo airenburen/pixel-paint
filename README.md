@@ -40,3 +40,7 @@ pixel-board/
 ## 许可
 
 GPL-3.0
+
+## 致谢
+
+本工具使用 DeepSeek-V4 制作
