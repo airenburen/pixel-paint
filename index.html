@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">   <!-- 内联 favicon：避免 file:// 下浏览器请求 favicon.ico 触发安全警告 -->
+<title data-i18n="app.brand">🖌 像素画板</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ======== 菜单栏 ======== -->
+  <div class="menubar" id="menubar">
+    <span class="brand" data-i18n="app.brand">🖌 像素画板</span>
+    <div class="menu">
+      <span class="menu-label" data-i18n="menu.file">文件</span>
+      <div class="menu-drop">
+        <div class="menu-item" data-action="new-canvas" data-i18n="menu.newCanvas">新建画布</div>
+        <div class="menu-sep"></div>
+        <div class="menu-item" data-action="open-project"><span data-i18n="menu.open">打开工程…</span> <span class="kbd">Ctrl+O</span></div>
+        <div class="menu-item" data-action="export-project" data-i18n="menu.exportProject">导出工程…</div>
+        <div class="menu-sep"></div>
+        <div class="menu-item" data-action="export" data-i18n="menu.export">导出 PNG…</div>
+      </div>
+    </div>
+    <div class="menu">
+      <span class="menu-label" data-i18n="menu.edit">编辑</span>
+      <div class="menu-drop">
+        <div class="menu-item" data-action="undo"><span data-i18n="menu.undo">撤销</span> <span class="kbd">Ctrl+Z</span></div>
+        <div class="menu-item" data-action="redo"><span data-i18n="menu.redo">重做</span> <span class="kbd">Ctrl+Y</span></div>
+        <div class="menu-sep"></div>
+        <div class="menu-item" data-action="clear-layer" data-i18n="menu.clearLayer">清空当前图层</div>
+      </div>
+    </div>
+    <div class="menu">
+      <span class="menu-label" data-i18n="menu.layer">图层</span>
+      <div class="menu-drop">
+        <div class="menu-item" data-action="add-layer"><span data-i18n="menu.addLayer">新建图层</span> <span class="kbd">Ctrl+Shift+N</span></div>
+        <div class="menu-item" data-action="add-folder" data-i18n="menu.newFolder">新建文件夹</div>
+        <div class="menu-item" data-action="dup-layer" data-i18n="menu.dupLayer">复制图层</div>
+        <div class="menu-sep"></div>
+        <div class="menu-item" data-action="clip-mask"><span data-i18n="menu.clipMask">剪切蒙版</span> <span class="kbd">Ctrl+Alt+G</span></div>
+        <div class="menu-sep"></div>
+        <div class="menu-item" data-action="layer-up"><span data-i18n="menu.moveUp">上移一层</span> <span class="kbd">Ctrl+]</span></div>
+        <div class="menu-item" data-action="layer-down"><span data-i18n="menu.moveDown">下移一层</span> <span class="kbd">Ctrl+[</span></div>
+        <div class="menu-sep"></div>
+        <div class="menu-item" data-action="del-layer" data-i18n="menu.delLayer">删除图层</div>
+      </div>
+    </div>
+    <div class="menu">
+      <span class="menu-label" data-i18n="menu.select">选择</span>
+      <div class="menu-drop">
+        <div class="menu-item" data-action="select-all"><span data-i18n="menu.selectAll">全选</span> <span class="kbd">Ctrl+A</span></div>
+        <div class="menu-item" data-action="deselect"><span data-i18n="menu.deselect">取消选择</span> <span class="kbd">Ctrl+D</span></div>
+      </div>
+    </div>
+    <div class="menu">
+      <span class="menu-label" data-i18n="menu.image">图像</span>
+      <div class="menu-drop">
+        <div class="menu-item" data-action="adjust" data-i18n="menu.adjust">调整…</div>
+      </div>
+    </div>
+    <div class="menu">
+      <span class="menu-label" data-action="settings" data-i18n="menu.settings">设置</span>
+    </div>
+    <div class="menu">
+      <span class="menu-label" data-i18n="menu.help">帮助</span>
+      <div class="menu-drop">
+        <div class="menu-item" data-action="help" data-i18n="menu.qa">Q&A</div>
+        <div class="menu-sep"></div>
+        <div class="menu-item" data-action="about" data-i18n="menu.about">关于 像素画板</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 工具选项栏 ======== -->
+  <div class="options-bar">
+    <div class="opt-group">
+      <button class="opt-btn" id="undoBtn" data-i18n="bar.undo" data-i18n-title="menu.undo" title="撤销 Ctrl+Z">↩ 撤销</button>
+      <button class="opt-btn" id="redoBtn" data-i18n="bar.redo" data-i18n-title="menu.redo" title="重做 Ctrl+Y">↪ 重做</button>
+    </div>
+    <div class="opt-group">
+      <span class="opt-label" data-i18n="bar.size">大小</span>
+      <input type="range" id="brushSize" min="1" max="16" step="1" value="1">
+      <span class="opt-value" id="brushSizeLabel">1×1</span>
+    </div>
+    <div class="opt-group">
+      <span class="opt-label" data-i18n="bar.grid">网格</span>
+      <span class="opt-value" id="gridSizeLabel">16×16</span>
+    </div>
+    <div class="opt-group">
+      <span class="opt-label" data-i18n="bar.color">颜色</span>
+      <span class="current-color" id="currentColorSwatch"></span>
+      <span class="opt-value" id="currentColorHex">#ffffff</span>
+    </div>
+    <div class="opt-group">
+      <span class="opt-label" data-i18n="bar.layer">图层</span>
+      <span class="opt-value" id="currentLayerLabel">图层 1</span>
+    </div>
+  </div>
+
+  <!-- ======== 主体三栏 ======== -->
+  <div class="main">
+
+    <!-- 左侧工具条 -->
+    <div class="tools-panel" id="toolsPanel">
+      <button class="tool-btn" data-tool="select" data-i18n-title="tool.select" title="选区 (M)">
+        <svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" stroke-dasharray="3 2.5"/></svg>
+      </button>
+      <button class="tool-btn active" data-tool="brush" data-i18n-title="tool.brush" title="画笔 (B)">
+        <svg viewBox="0 0 24 24"><path d="M4 20l2.5-7L19 1.5 22.5 5 9 17.5z"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="eraser" data-i18n-title="tool.eraser" title="橡皮擦 (E)">
+        <svg viewBox="0 0 24 24"><path d="M5 15L14 6l6 6-7 7H8z"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="bucket" data-i18n-title="tool.bucket" title="油漆桶 (G)">
+        <svg viewBox="0 0 24 24"><path d="M5 9h14l-1.5 9a2 2 0 01-2 1.8H8.5a2 2 0 01-2-1.8z"/><path d="M12 3L8.5 6.5a3 3 0 007 0z"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="eyedropper" data-i18n-title="tool.eyedropper" title="吸管 (I)">
+        <svg viewBox="0 0 24 24"><path d="M14 4l6 6-8 8-6-6z"/><rect x="7" y="11" width="6" height="6" transform="rotate(45 10 14)"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="move" data-i18n-title="tool.move" title="移动选区内容 (V)">
+        <svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg>
+      </button>
+      <button class="tool-btn" data-tool="shape" data-i18n-title="tool.shape" title="形状工具 (U)">
+        <svg viewBox="0 0 24 24"><rect x="4" y="5" width="10" height="10"/><circle cx="16" cy="16" r="4"/></svg>
+      </button>
+      <div class="shape-opts" id="shapeOpts">
+        <button type="button" class="mini-btn active" id="shapeKindBtn">方</button>
+        <button type="button" class="mini-btn" id="shapeModeBtn">填充</button>
+      </div>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" id="clearLayerBtn" data-i18n-title="tool.clearLayer" title="清空当前图层">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>
+      </button>
+    </div>
+
+    <!-- 中央画布 -->
+    <div class="canvas-area">
+      <div class="viewport" id="viewport">
+        <div class="board-wrap" id="boardWrap">
+          <div id="board"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧面板（可拖动左缘调整宽度） -->
+    <div class="panel-resizer" id="panelResizer" title="拖动调整面板宽度"></div>
+    <div class="side-panels">
+      <div class="panel color-panel">
+        <div class="panel-header" data-i18n="panel.color">颜色</div>
+        <div class="panel-body">
+          <div class="color-mode-tabs">
+            <button type="button" class="color-mode-tab active" data-mode="wheel" data-i18n="colorMode.wheel">色轮</button>
+            <button type="button" class="color-mode-tab" data-mode="rgb" data-i18n="colorMode.rgb">RGB</button>
+          </div>
+          <div class="wheel-wrap" id="wheelWrap">
+            <canvas id="wheelBase" width="150" height="150"></canvas>
+            <canvas id="wheelCursor" width="150" height="150"></canvas>
+          </div>
+          <div class="setting-row" id="wheelValueRow">
+            <span class="opt-label" data-i18n="panel.brightness">亮度</span>
+            <input type="range" id="wheelValue" min="0" max="100" step="1" value="100">
+            <span class="opt-value" id="wheelValueLabel">100%</span>
+          </div>
+          <div class="rgb-panel" id="rgbPanel" hidden>
+            <div class="setting-row"><span class="rgb-label">R</span><input type="range" id="rgbR" min="0" max="255" step="1" value="255"><span class="opt-value rgb-val" id="rgbRVal">255</span></div>
+            <div class="setting-row"><span class="rgb-label">G</span><input type="range" id="rgbG" min="0" max="255" step="1" value="255"><span class="opt-value rgb-val" id="rgbGVal">255</span></div>
+            <div class="setting-row"><span class="rgb-label">B</span><input type="range" id="rgbB" min="0" max="255" step="1" value="255"><span class="opt-value rgb-val" id="rgbBVal">255</span></div>
+          </div>
+          <div class="setting-row">
+            <span class="opt-label" data-i18n="panel.alpha">透明度</span>
+            <input type="range" id="colorAlpha" min="0" max="100" step="1" value="100">
+            <span class="opt-value" id="colorAlphaLabel">100%</span>
+          </div>
+          <div class="setting-row">
+            <span class="opt-label" data-i18n="panel.hex">色值</span>
+            <span class="hex-preview" id="hexPreview"></span>
+            <input type="text" id="hexInput" maxlength="9" spellcheck="false" value="#ffffffff" title="#RRGGBBAA">
+          </div>
+          <div class="setting-row">
+            <span class="opt-label"></span>
+            <button type="button" class="opt-btn" id="canvasPickBtn" data-i18n="panel.pick">从画布取色</button>
+          </div>
+          <div class="setting-row">
+            <span class="opt-label" data-i18n="panel.preset">预设</span>
+            <select id="palettePreset">
+              <option value="classic" data-i18n="preset.classic" selected>经典</option>
+              <option value="pico8" data-i18n="preset.pico8">PICO-8 像素风</option>
+              <option value="vga" data-i18n="preset.vga">VGA 复古</option>
+              <option value="websafe" data-i18n="preset.websafe">Web 安全色</option>
+            </select>
+          </div>
+          <div class="palette" id="palette"></div>
+        </div>
+      </div>
+
+      <div class="panel layer-panel">
+        <div class="panel-header" data-i18n="panel.layers">图层</div>
+        <div class="panel-body">
+          <select id="blendMode" data-i18n-title="panel.blend" title="当前图层的混合模式">
+            <option value="normal" data-i18n="blend.normal" selected>正常</option>
+            <option value="multiply" data-i18n="blend.multiply">正片叠底</option>
+            <option value="screen" data-i18n="blend.screen">滤色</option>
+            <option value="overlay" data-i18n="blend.overlay">叠加</option>
+            <option value="darken" data-i18n="blend.darken">变暗</option>
+            <option value="lighten" data-i18n="blend.lighten">变亮</option>
+            <option value="difference" data-i18n="blend.difference">差值</option>
+            <option value="exclusion" data-i18n="blend.exclusion">排除</option>
+            <option value="color-dodge" data-i18n="blend.color-dodge">颜色减淡</option>
+            <option value="color-burn" data-i18n="blend.color-burn">颜色加深</option>
+            <option value="hard-light" data-i18n="blend.hard-light">强光</option>
+            <option value="soft-light" data-i18n="blend.soft-light">柔光</option>
+          </select>
+          <div class="layer-list" id="layerList"></div>
+          <div class="opacity-row">
+            <span class="opt-label" data-i18n="panel.opacity">不透明度</span>
+            <input type="range" id="layerOpacity" min="0" max="100" step="1" value="100">
+            <span class="opt-value" id="layerOpacityLabel">100%</span>
+          </div>
+          <div class="layer-actions">
+            <button id="addFolderBtn" data-i18n-title="btn.addFolder" title="新建文件夹">
+              <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+            </button>
+            <button id="addLayerBtn" data-i18n-title="btn.addLayer" title="新建图层">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <button id="dupLayerBtn" data-i18n-title="btn.dupLayer" title="复制图层">
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="10" height="10" rx="1"/><path d="M5 15V5h10"/></svg>
+            </button>
+            <button id="layerUpBtn" data-i18n-title="btn.moveUp" title="上移一层">
+              <svg viewBox="0 0 24 24"><path d="M12 19V6M6 12l6-6 6 6"/></svg>
+            </button>
+            <button id="layerDownBtn" data-i18n-title="btn.moveDown" title="下移一层">
+              <svg viewBox="0 0 24 24"><path d="M12 5v13M6 12l6 6 6-6"/></svg>
+            </button>
+            <button id="delLayerBtn" data-i18n-title="btn.delLayer" title="删除图层">
+              <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 状态栏 ======== -->
+  <div class="statusbar">
+    <span id="statusInfo">16 × 16 · 2 图层</span>
+    <span class="status-sep">·</span>
+    <span id="buildStamp"></span>
+    <div class="status-right">
+      <span class="zoom-label" id="zoomLabel" data-i18n-title="status.zoomTip" title="点击重置 100% · Ctrl+0 适配视图 · Ctrl+滚轮缩放">100%</span>
+      <span class="status-sep">·</span>
+      <span id="statusTool">画笔</span>
+    </div>
+  </div>
+
+  <!-- ======== 首选项对话框 ======== -->
+  <div class="modal-overlay" id="settingsOverlay" hidden>
+    <div class="modal settings-modal">
+      <div class="modal-header" data-i18n="menu.settings">设置</div>
+      <div class="modal-body settings-body">
+        <div class="settings-tabs">
+          <button type="button" class="settings-tab active" data-tab="canvas" data-i18n="prefs.group.canvas">画布</button>
+          <button type="button" class="settings-tab" data-tab="view" data-i18n="prefs.group.view">视图与历史</button>
+          <button type="button" class="settings-tab" data-tab="appearance" data-i18n="prefs.group.appearance">外观</button>
+          <button type="button" class="settings-tab" data-tab="selection" data-i18n="prefs.group.selection">选区</button>
+          <button type="button" class="settings-tab" data-tab="shortcuts" data-i18n="prefs.group.shortcuts">快捷键</button>
+        </div>
+        <div class="settings-panes">
+          <div class="settings-pane active" data-pane="canvas">
+            <label class="pref-row"><span data-i18n="set.showGrid">显示网格线</span><span class="px-switch"><input type="checkbox" id="setShowGrid" checked><span class="px-switch-track"></span></span></label>
+            <label class="pref-row"><span data-i18n="set.checker">透明棋盘格背景</span><span class="px-switch"><input type="checkbox" id="setChecker" checked><span class="px-switch-track"></span></span></label>
+            <div class="pref-row">
+              <span data-i18n="set.checkerTone">棋盘格明度</span>
+              <select id="setCheckerTone">
+                <option value="dark" data-i18n="set.tone.dark">深色</option>
+                <option value="standard" data-i18n="set.tone.standard" selected>标准</option>
+                <option value="light" data-i18n="set.tone.light">亮色</option>
+              </select>
+            </div>
+            <div class="pref-row">
+              <span data-i18n="set.defaultGrid">默认网格尺寸</span>
+              <select id="setDefaultGrid">
+                <option value="8">8×8</option>
+                <option value="16" selected>16×16</option>
+                <option value="32">32×32</option>
+                <option value="64">64×64</option>
+              </select>
+            </div>
+          </div>
+          <div class="settings-pane" data-pane="view">
+            <div class="pref-row">
+              <span data-i18n="set.undoLimit">撤销步数</span>
+              <select id="setUndoLimit">
+                <option value="20" data-i18n="set.undo.20">20 步</option>
+                <option value="40" data-i18n="set.undo.40" selected>40 步</option>
+                <option value="100" data-i18n="set.undo.100">100 步</option>
+              </select>
+            </div>
+            <div class="pref-row">
+              <span data-i18n="set.zoomStep">滚轮缩放步进</span>
+              <select id="setZoomStep">
+                <option value="1.05" data-i18n="set.zoom.smooth">平滑（1.05×）</option>
+                <option value="1.1" data-i18n="set.zoom.normal" selected>适中（1.1×）</option>
+                <option value="1.2" data-i18n="set.zoom.fast">快速（1.2×）</option>
+              </select>
+            </div>
+            <div class="pref-row">
+              <span data-i18n="set.smoothness">视图平滑度</span>
+              <select id="setSmoothness">
+                <option value="0.35" data-i18n="set.smooth.snappy">跟手</option>
+                <option value="0.28" data-i18n="set.smooth.normal" selected>适中</option>
+                <option value="0.18" data-i18n="set.smooth.soft">柔和</option>
+              </select>
+            </div>
+          </div>
+          <div class="settings-pane" data-pane="appearance">
+            <div class="pref-row">
+              <span data-i18n="set.theme">主题</span>
+              <select id="setTheme">
+                <option value="dark" data-i18n="theme.dark" selected>深色</option>
+                <option value="light" data-i18n="theme.light">亮色</option>
+              </select>
+            </div>
+            <div class="pref-row">
+              <span data-i18n="set.lang">语言</span>
+              <select id="setLang">
+                <option value="zh" selected>简体中文</option>
+                <option value="ja">日本語</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+          </div>
+          <div class="settings-pane" data-pane="selection">
+            <label class="pref-row"><span data-i18n="set.clickDeselect">点击画布外取消选区</span><span class="px-switch"><input type="checkbox" id="setClickDeselect" checked><span class="px-switch-track"></span></span></label>
+          </div>
+          <div class="settings-pane" data-pane="shortcuts">
+            <div class="shortcut-list" id="shortcutList"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="opt-btn" id="settingsReset" data-i18n="set.reset">恢复默认</button>
+        <span style="flex:1"></span>
+        <button class="opt-btn primary-modal" id="settingsOk" data-i18n="set.ok">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 关于对话框 ======== -->
+  <div class="modal-overlay" id="aboutOverlay" hidden>
+    <div class="modal">
+      <div class="modal-header" data-i18n="menu.about">关于 像素画板</div>
+      <div class="modal-body about-body">
+        <div class="about-title"><span data-i18n="about.title">🎨 像素画板</span> <span id="aboutVersion" class="ver"></span></div>
+        <p data-i18n="about.desc">一个零依赖、单文件的像素绘图小工具，界面与交互借鉴经典像素软件。</p>
+        <p><span data-i18n="about.featuresLabel">功能</span><span data-i18n="about.features">多图层（增删/排序/可见性/重命名/不透明度/混合模式/缩略图）、画笔 / 橡皮擦 / 油漆桶 / 吸管、撤销重做、以鼠标为中心的缩放与平滑平移、透明背景 PNG 导出、可配置首选项、中日英界面。</span></p>
+        <p><span data-i18n="about.shortcutsLabel">快捷键</span><span data-i18n="about.shortcuts">B / E / G / I 切换工具 · Ctrl+Z / Ctrl+Y 撤销重做 · Ctrl+[ / Ctrl+] 调整图层顺序 · Ctrl+Shift+N 新建图层 · 滚轮缩放 · 空格或中键拖拽平移 · Ctrl+0 适配视图</span></p>
+        <p class="about-tech" data-i18n="about.tech">纯 HTML + CSS + JavaScript，无任何外部依赖，双击即可离线运行。</p>
+        <p class="about-tech"><span data-i18n="about.fontPrefix">界面字体：</span><a href="https://github.com/TakWolf/fusion-pixel-font" target="_blank" rel="noopener" class="font-link">Fusion Pixel Font</a><span data-i18n="about.fontSuffix">（SIL OFL 1.1 · © TakWolf 及贡献者）</span></p>
+      </div>
+      <div class="modal-footer">
+        <span style="flex:1"></span>
+        <button class="opt-btn primary-modal" id="aboutOk" data-i18n="common.ok">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 创建画布对话框 ======== -->
+  <div class="modal-overlay" id="canvasSizeOverlay" hidden>
+    <div class="modal">
+      <div class="modal-header" data-i18n="canvas.title">新建画布</div>
+      <div class="modal-body">
+        <div class="setting-row">
+          <span class="opt-label" data-i18n="canvas.size">画布尺寸</span>
+          <input type="number" id="canvasSizeInput" min="8" max="64" step="1" value="16">
+          <span class="opt-value" data-i18n="canvas.range">(8–64)</span>
+        </div>
+        <div class="hint" data-i18n="canvas.hint">创建后不可更改尺寸，请确认。</div>
+      </div>
+      <div class="modal-footer">
+        <span style="flex:1"></span>
+        <button class="opt-btn" id="canvasSizeCancel" data-i18n="common.cancel">取消</button>
+        <button class="opt-btn primary-modal" id="canvasSizeOk" data-i18n="common.ok">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== Q&A 对话框 ======== -->
+  <div class="modal-overlay" id="helpOverlay" hidden>
+    <div class="modal">
+      <div class="modal-header" data-i18n="menu.qa">Q&A</div>
+      <div class="modal-body qa-list">
+        <div class="qa-item">
+          <div class="qa-q" data-i18n="qa.q1">Q1. 快捷键在哪里查看或修改？</div>
+          <div class="qa-a" data-i18n="qa.a1">打开 设置 → 快捷键，可查看全部快捷键，点击“更改”后直接按下新组合即可自定义。</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q" data-i18n="qa.q2">Q2. 如何撤销或重做？</div>
+          <div class="qa-a" data-i18n="qa.a2">默认 Ctrl+Z 撤销、Ctrl+Y 重做（也可在设置中自定义其他按键）。</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q" data-i18n="qa.q3">Q3. 如何保存或打开工程？</div>
+          <div class="qa-a" data-i18n="qa.a3">使用 文件 → 导出工程 保存为 .AIPSD 工程文件，文件 → 打开工程 载入；文件 → 导出 PNG 可导出图片。</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q" data-i18n="qa.q4">Q4. 图层文件夹怎么使用？</div>
+          <div class="qa-a" data-i18n="qa.a4">新建文件夹后，把图层拖到文件夹行上即可移入；文件夹行可拖拽排序、折叠、单独控制可见性，文件夹内图层的合成顺序不变。</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q" data-i18n="qa.q5">Q5. 如何缩放或平移画布？</div>
+          <div class="qa-a" data-i18n="qa.a5">滚轮以鼠标为中心缩放；按住空格或中键拖拽平移；Ctrl+0 适配视图，Ctrl+1 回到 100%。</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q" data-i18n="qa.q6">Q6. 如何切换界面语言或主题？</div>
+          <div class="qa-a" data-i18n="qa.a6">打开 设置 → 外观，可切换 中文/日本語/English 界面与深色/亮色主题。</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q" data-i18n="qa.q7">Q7. 移动工具和形状工具怎么用？</div>
+          <div class="qa-a" data-i18n="qa.a7">选择「移动」工具（V）后在选区内拖拽即可剪切移动选区内容；「形状」工具（U）拖拽绘制矩形/圆形，用工具栏下方按钮切换 方/圆 与 填充/描边（描边粗细随顶部「大小」）。</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q" data-i18n="qa.q8">Q8. 选区如何移动或取消？</div>
+          <div class="qa-a" data-i18n="qa.a8">用「选择」工具拖拽选区内部（非边缘）移动选框，拖边缘或外部重新框选；Ctrl+A 全选、Ctrl+D 取消，点击画布外空白也可取消（可在设置中开关）。</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q" data-i18n="qa.q9">Q9. 如何调节画笔/橡皮擦粗细？</div>
+          <div class="qa-a" data-i18n="qa.a9">顶部工具栏的「大小」滑块控制画笔与橡皮擦的粗细（1–16 格）。</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q" data-i18n="qa.q10">Q10. 如何吸取画布上的颜色？</div>
+          <div class="qa-a" data-i18n="qa.a10">用「吸管」工具（I）点击画布取色；或点颜色面板的「从画布取色」按钮后点画布取色，取色后自动回到原工具。</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span style="flex:1"></span>
+        <button class="opt-btn primary-modal" id="helpOk" data-i18n="common.ok">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 图像调整对话框 ======== -->
+  <div class="modal-overlay" id="adjustOverlay" hidden>
+    <div class="modal">
+      <div class="modal-header" data-i18n="adj.title">图像调整</div>
+      <div class="modal-body">
+        <div class="setting-row">
+          <span data-i18n="adj.applyTo">应用于</span>
+          <select id="adjTarget">
+            <option value="layer" data-i18n="adj.currentLayer" selected>当前图层</option>
+            <option value="all" data-i18n="adj.allLayers">所有可见图层</option>
+          </select>
+        </div>
+        <div class="setting-row"><span data-i18n="adj.hue">色相</span><input type="range" id="adjHue" min="-180" max="180" step="1" value="0"><span class="opt-value adj-val" id="adjHueVal">0°</span></div>
+        <div class="setting-row"><span data-i18n="adj.sat">饱和度</span><input type="range" id="adjSat" min="-100" max="100" step="1" value="0"><span class="opt-value adj-val" id="adjSatVal">0</span></div>
+        <div class="setting-row"><span data-i18n="adj.bright">亮度</span><input type="range" id="adjBright" min="-100" max="100" step="1" value="0"><span class="opt-value adj-val" id="adjBrightVal">0</span></div>
+        <div class="setting-row"><span data-i18n="adj.contrast">对比度</span><input type="range" id="adjContrast" min="-100" max="100" step="1" value="0"><span class="opt-value adj-val" id="adjContrastVal">0</span></div>
+      </div>
+      <div class="modal-footer">
+        <button class="opt-btn" id="adjCancel" data-i18n="adj.cancel">取消</button>
+        <span style="flex:1"></span>
+        <button class="opt-btn primary-modal" id="adjApply" data-i18n="adj.apply">应用</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 通用确认对话框 ======== -->
+  <div class="modal-overlay" id="confirmOverlay" hidden>
+    <div class="modal modal-sm">
+      <div class="modal-header" id="confirmTitle"></div>
+      <div class="modal-body" id="confirmText"></div>
+      <div class="modal-footer">
+        <button class="opt-btn" id="confirmCancel"></button>
+        <span style="flex:1"></span>
+        <button class="opt-btn primary-modal" id="confirmOk"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 导出 PNG 选项对话框 ======== -->
+  <div class="modal-overlay" id="exportOverlay" hidden>
+    <div class="modal modal-sm">
+      <div class="modal-header" data-i18n="menu.export">导出 PNG…</div>
+      <div class="modal-body">
+        <div class="pref-row">
+          <span data-i18n="set.exportCell">导出像素大小</span>
+          <select id="exportCellSelect">
+            <option value="8">8 px</option>
+            <option value="16" selected>16 px</option>
+            <option value="32">32 px</option>
+          </select>
+        </div>
+        <div class="pref-row">
+          <span data-i18n="set.exportBg">导出背景</span>
+          <select id="exportBgSelect">
+            <option value="transparent" data-i18n="set.bg.transparent" selected>透明</option>
+            <option value="white" data-i18n="set.bg.white">白色</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="opt-btn" id="exportCancel" data-i18n="adj.cancel">取消</button>
+        <span style="flex:1"></span>
+        <button class="opt-btn primary-modal" id="exportOk" data-i18n="msg.export">导出</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 工程文件导入 ======== -->
+  <input type="file" id="projectFile" accept=".AIPSD,application/json,.json" hidden>
+</div>
+
+
+<script src="app.js"></script>
+</body>
+</html>
