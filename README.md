@@ -6,6 +6,10 @@
 
 直接打开 `index.html` 即可（完全离线，无需构建；字体已内嵌于本地 `assets/`）。
 
+> 两种形态：
+> - **拆分版**（本目录）：`index.html` + `styles.css` + `app.js` + `assets/`，便于维护
+> - **单文件版**：`standalone/index.html`，全部样式/脚本/字体内联在单个文件，便于分发或另存
+
 ## 目录结构
 
 ```
@@ -13,8 +17,10 @@ pixel-board/
 ├── index.html   # 入口（外链样式与脚本）
 ├── styles.css   # 全部样式（含像素风字体引用）
 ├── app.js       # 全部逻辑
-└── assets/
-    └── fusion-pixel.woff2   # Fusion Pixel 像素字体（本地离线）
+├── assets/
+│   └── fusion-pixel.woff2   # Fusion Pixel 像素字体（本地离线）
+└── standalone/
+    └── index.html           # 单文件版（样式/脚本/字体全部内联）
 ```
 
 ## 功能特性
