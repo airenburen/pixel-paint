@@ -39,4 +39,4 @@ pixel-board/
 
 ## 许可
 
-MIT
+GPL-3.0
